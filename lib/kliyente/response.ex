@@ -7,7 +7,8 @@ defmodule Kliyente.Response do
             cookies: [],
             body: "",
             complete: false,
-            conn: nil
+            conn: nil,
+            fresh: nil
 
   alias Kliyente.{Request, Error, Header, Cookie}
 

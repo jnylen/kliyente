@@ -8,12 +8,37 @@ defmodule Kliyente.Request do
             opts: [],
             previous_locations: []
 
-  alias Kliyente.{Error, Request, Response, Cookie, Header}
+  alias Kliyente.{ContentCache, Error, Request, Response, Cookie, Header}
 
   def call(
         conn,
-        %Request{method: method, path: path, headers: headers, body: body, opts: _opts} = request
+        %Request{opts: opts} = request
       ) do
+    # Can be cached?
+    if ContentCache.Request.cacheable?(request) and has_required_opts?(opts) do
+      # SKIP?
+      conn
+      |> fetch(request)
+      |> case do
+        {:ok, %Response{} = response} ->
+          if ContentCache.Response.fresh?(response) do
+            {:ok, response}
+          else
+            with {:ok, response} <- validate(request, response) do
+              ContentCache.File.store(request, response)
+            end
+          end
+      end
+    else
+      conn
+      |> fetch(request)
+    end
+  end
+
+  defp fetch(
+         conn,
+         %Request{method: method, path: path, headers: headers, body: body, opts: _opts} = request
+       ) do
     Mint.HTTP.request(conn, method, path, append_headers(conn, headers), body)
     |> case do
       {:ok, conn, _request_ref} ->
@@ -50,6 +75,14 @@ defmodule Kliyente.Request do
         {:error, %Error{message: "unknown response from request"}}
     end
     |> follow_redirect()
+  end
+
+  defp has_required_opts?(opts) do
+    if Keyword.get(opts, :file_name, false) and Keyword.get(opts, :folder_name, false) do
+      true
+    else
+      false
+    end
   end
 
   defp append_headers(conn, headers),
