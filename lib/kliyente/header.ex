@@ -1,4 +1,18 @@
 defmodule Kliyente.Header do
+  def delete(headers, name) do
+    name = String.downcase(name)
+    Enum.filter(headers, fn {key, _value} -> String.downcase(key) != name end)
+  end
+
+  def add(headers, _name, nil), do: headers
+
+  def add(headers, name, [{_, value} | _]), do: add(headers, name, value)
+  def add(headers, name, {_, value}), do: add(headers, name, value)
+
+  def add(headers, name, value) do
+    [{name, value} | headers]
+  end
+
   def get(headers, name) do
     case get_values(headers, name) do
       [] -> nil

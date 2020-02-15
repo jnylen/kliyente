@@ -3,7 +3,7 @@ defmodule Kliyente do
   Documentation for Kliyente.
   """
 
-  alias Kliyente.{Header, Client, Error, Request, Response, Cookie}
+  alias Kliyente.{Header, Client, Error, Cookie, Request}
 
   def open({:ok, %{conn: conn} = struct}) do
     if alive?(conn) do
@@ -35,6 +35,7 @@ defmodule Kliyente do
     end
   end
 
+  @spec get({:error, any} | {:ok, %{conn: any}}, any, any) :: {:error, any} | {:ok, any}
   def get(client_tuple, path, headers \\ [])
 
   def get({:error, _} = error, _path, _headers), do: error
