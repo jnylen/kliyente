@@ -10,11 +10,7 @@ defmodule Kliyente.Response do
             conn: nil,
             fresh: nil
 
-  alias Kliyente.{Request, Error, Header, Cookie}
-
-  # Cache the result etc
-  defp parse_response(response) do
-  end
+  alias Kliyente.{Request, Error}
 
   defp time, do: System.monotonic_time(:millisecond)
 

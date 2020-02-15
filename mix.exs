@@ -3,7 +3,13 @@ defmodule Kliyente.MixProject do
 
   @name :kliyente
   @version "0.1.0"
-  @deps [{:mint, "~> 1.0"}, {:castore, "~> 0.1.5"}, {:cookie_jar, "~> 1.0"}]
+  @deps [
+    {:mint, "~> 1.0"},
+    {:castore, "~> 0.1.5"},
+    {:cookie_jar, "~> 1.0"},
+    {:calendar, "~> 1.0"},
+    {:jason, "~> 1.1"}
+  ]
 
   def project do
     [
