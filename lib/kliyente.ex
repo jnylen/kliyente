@@ -3,31 +3,66 @@ defmodule Kliyente do
   Documentation for Kliyente.
   """
 
-  alias Kliyente.{Header, Client, Error, Cookie, Request}
+  alias Kliyente.{Client, Cookie, Error, Request}
 
-  def open({:ok, %{conn: conn} = struct}) do
-    if alive?(conn) do
-      {:ok, struct}
+  @doc """
+    `open/1` takes an already closed connection and tries to open it again.
+  """
+  def open({:ok, %{conn: conn, opts: opts}} = tuple) do
+    if alive?(tuple) do
+      tuple
     else
       open(
         conn.host,
-        Mint.HTTP.get_private(conn, :module),
-        if(conn.schema_as_string == "http", do: false, else: true),
+        opts,
         conn
       )
     end
   end
 
-  def open(domain, module \\ nil, ssl \\ false, old_conn \\ nil) do
-    Mint.HTTP.connect(if(ssl, do: :https, else: :http), domain, if(ssl, do: 443, else: 80))
+  @doc """
+    `open/4` opens a connection a domain and create a cookie jar.
+
+    ** Examples: **
+
+      > Kliyente.open("httpbin.org")
+      {:ok,
+        %Kliyente.Client{
+          conn: %Mint.HTTP1{
+            buffer: "",
+            host: "httpbin.org",
+            mode: :active,
+            port: 80,
+            private: %{jar: #PID<_>, module: nil},
+            request: nil,
+            requests: {[], []},
+            scheme_as_string: "http",
+            socket: #Port<_>,
+            state: :open,
+            transport: Mint.Core.Transport.TCP
+          }
+        }
+      }
+  """
+  def open(domain, opts \\ [], old_conn \\ nil) do
+    Mint.HTTP.connect(
+      if(Keyword.get(opts, :ssl, false), do: :https, else: :http),
+      domain,
+      if(Keyword.get(opts, :ssl, false), do: 443, else: 80),
+      ssl_opts?(Keyword.get(opts, :ssl, false), opts)
+    )
     |> case do
       {:ok, conn} ->
         {:ok,
          %Client{
+           opts: opts,
            conn:
              conn
-             |> Mint.HTTP.put_private(:module, module)
-             |> Mint.HTTP.put_private(:jar, get_old_jar?(old_conn))
+             |> Mint.HTTP.put_private(
+               :module,
+               get_old_conf?(:module, old_conn) || Keyword.get(opts, :module)
+             )
+             |> Mint.HTTP.put_private(:jar, get_old_conf?(:jar, old_conn))
          }}
 
       val ->
@@ -35,19 +70,18 @@ defmodule Kliyente do
     end
   end
 
-  @spec get({:error, any} | {:ok, %{conn: any}}, any, any) :: {:error, any} | {:ok, any}
   def get(client_tuple, path, headers \\ [])
 
   def get({:error, _} = error, _path, _headers), do: error
 
-  def get({:ok, %{conn: conn}}, path, headers),
-    do: Request.call(conn, %Request{method: "GET", path: path, headers: headers})
+  def get({:ok, %{conn: _conn}} = tuple, path, headers),
+    do: call(tuple, %Request{method: "GET", path: path, headers: headers})
 
   def post(client_tuple, path, body, headers \\ [])
   def post({:error, _} = error, _path, _body, _headers), do: error
 
-  def post({:ok, struct}, path, body, headers) do
-  end
+  def post({:ok, %{conn: _conn}} = tuple, path, body, headers),
+    do: call(tuple, %Request{method: "POST", path: path, headers: headers, body: body})
 
   def alive?({:ok, %{conn: conn}}) do
     conn
@@ -64,10 +98,37 @@ defmodule Kliyente do
     Mint.HTTP.close(conn)
   end
 
-  defp get_old_jar?(nil), do: Cookie.new()
+  defp call(tuple, request) do
+    tuple
+    |> open()
+    |> case do
+      {:ok, %{conn: conn}} ->
+        Request.call(conn, request)
 
-  defp get_old_jar?(conn) do
+      _val ->
+        {:error, %Error{reason: "not correct format in call"}}
+    end
+  end
+
+  defp get_old_conf?(:module, nil), do: nil
+
+  defp get_old_conf?(:module, conn) do
+    conn
+    |> Mint.HTTP.get_private(:module)
+  end
+
+  defp get_old_conf?(:jar, nil), do: Cookie.new()
+
+  defp get_old_conf?(:jar, conn) do
     conn
     |> Mint.HTTP.get_private(:jar, Cookie.new())
   end
+
+  defp ssl_opts?(true, opts) do
+    opts
+    |> Keyword.get(:client, [])
+    |> Keyword.put_new(:transfer_opts, ciphers: :ssl.cipher_suites(:default, :"tlsv1.2"))
+  end
+
+  defp ssl_opts?(_, opts), do: opts |> Keyword.get(:client, [])
 end

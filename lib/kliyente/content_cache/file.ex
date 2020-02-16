@@ -1,15 +1,14 @@
 defmodule Kliyente.ContentCache.File do
   alias Calendar.DateTime, as: CalDT
   alias Kliyente.ContentCache.Response
-  alias Kliyente.Header
+  alias Kliyente.{Header, Request}
 
-  defp temp_storage, do: "/tmp/kliyente/"
-  defp file_path(key), do: Path.join([temp_storage(), key])
+  defp storage(%Request{opts: opts}), do: Keyword.get(opts, :folder_name)
+  defp file_name(%Request{opts: opts}), do: Keyword.get(opts, :file_name)
+  defp file_path(request), do: Path.join([storage(request), file_name(request)])
 
   def put(request, response) do
     request
-    |> Map.get(:path)
-    |> hash_string()
     |> file_path()
     |> File.write!(
       response
@@ -20,15 +19,11 @@ defmodule Kliyente.ContentCache.File do
 
   def get(request) do
     request
-    |> Map.get(:path)
-    |> hash_string()
     |> file_path()
     |> File.exists?()
     |> case do
       true ->
         request
-        |> Map.get(:path)
-        |> hash_string()
         |> file_path()
         |> File.read!()
         |> decode()
@@ -44,15 +39,8 @@ defmodule Kliyente.ContentCache.File do
 
   def delete(request) do
     request
-    |> Map.get(:path)
-    |> hash_string()
     |> file_path()
     |> File.rm!()
-  end
-
-  defp hash_string(string) do
-    :crypto.hash(:sha256, string)
-    |> Base.encode16()
   end
 
   def store(request, response) do
