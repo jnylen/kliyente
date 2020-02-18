@@ -1,5 +1,5 @@
 defmodule Kliyente.ContentCache do
-  defstruct file_name: nil, folder_name: nil, module: nil
+  defstruct file_name: nil, folder_name: nil
 
   alias Kliyente.{ContentCache, Header, Client, Response}
 
