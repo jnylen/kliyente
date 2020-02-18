@@ -1,6 +1,6 @@
 # Kliyente
 
-**TODO: Add description**
+Kliyente is a HTTP Client that uses Mint and CookieJar for fetching and caching downloads on the harddrive.
 
 ## Installation
 
@@ -18,6 +18,13 @@ end
 Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
 and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
 be found at [https://hexdocs.pm/kliyente](https://hexdocs.pm/kliyente).
+
+## Usage
+
+```elixir
+Kliyente.open("httpbin.org", ssl: true)
+|> Kliyente.get("/cookie/set?cooke=value")
+```
 
 ## Credits
 
