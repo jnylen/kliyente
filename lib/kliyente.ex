@@ -33,7 +33,7 @@ defmodule Kliyente do
             host: "httpbin.org",
             mode: :active,
             port: 80,
-            private: %{jar: #PID<_>, module: nil},
+            private: %{jar: #PID<_>},
             request: nil,
             requests: {[], []},
             scheme_as_string: "http",
@@ -58,10 +58,7 @@ defmodule Kliyente do
            opts: opts,
            conn:
              conn
-             |> Mint.HTTP.put_private(
-               :module,
-               get_old_conf?(:module, old_conn) || Keyword.get(opts, :module)
-             )
+             |> Mint.HTTP.put_private(:opts, get_old_conf?(:opts, old_conn) || opts)
              |> Mint.HTTP.put_private(:jar, get_old_conf?(:jar, old_conn))
          }}
 
@@ -110,11 +107,11 @@ defmodule Kliyente do
     end
   end
 
-  defp get_old_conf?(:module, nil), do: nil
+  defp get_old_conf?(:opts, nil), do: nil
 
-  defp get_old_conf?(:module, conn) do
+  defp get_old_conf?(:opts, conn) do
     conn
-    |> Mint.HTTP.get_private(:module)
+    |> Mint.HTTP.get_private(:opts)
   end
 
   defp get_old_conf?(:jar, nil), do: Cookie.new()

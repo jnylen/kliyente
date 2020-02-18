@@ -20,7 +20,7 @@ defmodule Kliyente.Client do
                 :conn,
                 response
                 |> Map.get(:conn)
-                |> Mint.HTTP.put_private(:module, Mint.HTTP.get_private(conn, :module, nil))
+                |> Mint.HTTP.put_private(:opts, Mint.HTTP.get_private(conn, :opts))
                 |> Mint.HTTP.put_private(:jar, Mint.HTTP.get_private(conn, :jar, Cookie.new()))
               )
               |> Cookie.update()
@@ -93,7 +93,7 @@ defmodule Kliyente.Client do
             Kliyente.close(tuple)
 
             {:ok, %Kliyente.Client{conn: new_conn}} =
-              Kliyente.open(uri.host, ssl: if(uri.scheme == "https", do: :https, else: :http))
+              Kliyente.open(uri.host, ssl: if(uri.scheme == "https", do: true, else: false))
 
             real_path = %URI{path: path, query: query} |> URI.to_string()
 
